@@ -32,7 +32,7 @@ with open('saved_data' + os.sep + 'data_tower.pickle', 'rb') as handle:
 
 # Training Parameters
 learning_rate = 0.01
-num_steps = 60000 # what should this be?
+num_steps = 300000 # what should this be?
 batch_size = 256
 
 # __MAX__
