@@ -32,7 +32,7 @@ with open('saved_data' + os.sep + 'data_tower.pickle', 'rb') as handle:
 
 # Training Parameters
 learning_rate = 0.01
-num_steps = 300000 # what should this be?
+num_steps = 1000000 # what should this be?
 batch_size = 256
 
 # __MAX__
@@ -59,8 +59,8 @@ display_step = 1000
 examples_to_show = 10
 
 # Network Parameters
-num_hidden_1 = 256 # 1st layer num features
-num_hidden_2 = 128 # 2nd layer num features (the latent dim)
+num_hidden_1 = 1024 # 1st layer num features
+num_hidden_2 = 256 # 2nd layer num features (the latent dim)
 num_input = rows*columns # serialised score
 
 # tf Graph input (only pictures)
