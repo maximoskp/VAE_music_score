@@ -129,10 +129,12 @@ with tf.Session() as sess:
 
     print("Original Images")
     plt.figure(figsize=(n, n))
+    plt.imshow(canvas_origin, origin="upper", cmap="gray")
     plt.savefig('figs/mnist_test_original.png', dpi=300); plt.clf()
     # plt.show()
 
     print("Reconstructed Images")
     plt.figure(figsize=(n, n))
-    plt.savefig('figs/mnist_test_original.png', dpi=300); plt.clf()
+    plt.imshow(canvas_recon, origin="upper", cmap="gray")
+    plt.savefig('figs/mnist_test_reconstructed.png', dpi=300); plt.clf()
     # plt.show()
