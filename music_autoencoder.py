@@ -59,9 +59,9 @@ display_step = 1000
 examples_to_show = 10
 
 # Network Parameters
-num_hidden_1 = 1024 # 1st layer num features
-num_hidden_2 = 256 # 2nd layer num features
-num_hidden_3 = 64 # the bottleneck
+num_hidden_1 = 2048 # 1st layer num features
+num_hidden_2 = 1024 # 2nd layer num features
+num_hidden_3 = 512 # the bottleneck
 num_input = rows*columns # serialised score
 
 # tf Graph input (only pictures)
