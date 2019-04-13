@@ -60,7 +60,8 @@ examples_to_show = 10
 
 # Network Parameters
 num_hidden_1 = 1024 # 1st layer num features
-num_hidden_2 = 256 # 2nd layer num features (the latent dim)
+num_hidden_2 = 256 # 2nd layer num features
+num_hidden_3 = 64 # the bottleneck
 num_input = rows*columns # serialised score
 
 # tf Graph input (only pictures)
@@ -69,14 +70,18 @@ X = tf.placeholder("float", [None, num_input])
 weights = {
     'encoder_h1': tf.Variable(tf.random_normal([num_input, num_hidden_1])),
     'encoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_hidden_2])),
-    'decoder_h1': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_1])),
-    'decoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
+    'encoder_h3': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_3])),
+    'decoder_h1': tf.Variable(tf.random_normal([num_hidden_3, num_hidden_2])),
+    'decoder_h2': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_1])),
+    'decoder_h3': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
 }
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
     'encoder_b2': tf.Variable(tf.random_normal([num_hidden_2])),
-    'decoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
-    'decoder_b2': tf.Variable(tf.random_normal([num_input])),
+    'encoder_b3': tf.Variable(tf.random_normal([num_hidden_3])),
+    'decoder_b1': tf.Variable(tf.random_normal([num_hidden_2])),
+    'decoder_b2': tf.Variable(tf.random_normal([num_hidden_1])),
+    'decoder_b3': tf.Variable(tf.random_normal([num_input])),
 }
 
 # Building the encoder
@@ -87,7 +92,10 @@ def encoder(x):
     # Encoder Hidden layer with sigmoid activation #2
     layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']),
                                    biases['encoder_b2']))
-    return layer_2
+    # Encoder Hidden layer with sigmoid activation #3
+    layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['encoder_h3']),
+                                   biases['encoder_b3']))
+    return layer_3
 
 
 # Building the decoder
@@ -98,7 +106,10 @@ def decoder(x):
     # Decoder Hidden layer with sigmoid activation #2
     layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']),
                                    biases['decoder_b2']))
-    return layer_2
+    # Decoder Hidden layer with sigmoid activation #3
+    layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['decoder_h3']),
+                                   biases['decoder_b3']))
+    return layer_3
 
 # Construct model
 encoder_op = encoder(X)
@@ -139,7 +150,8 @@ with tf.Session() as sess:
         if i % display_step == 0 or i == 1:
             print('Step %i: Minibatch Loss: %f' % (i, l))
 
-    # Testing
+    # Testing =========================================================================
+    # TEST SET
     # Encode and decode images from test set and visualize their reconstruction.
     n = 4
     canvas_orig = np.empty((rows * n, columns * n))
@@ -168,11 +180,49 @@ with tf.Session() as sess:
     print("Original Images")
     plt.figure(figsize=(n, n))
     plt.imshow(canvas_orig, origin="upper", cmap="gray")
-    plt.savefig('figs/original.png', dpi=300); plt.clf()
+    plt.savefig('figs/test_original.png', dpi=300); plt.clf()
     # plt.show()
 
     print("Reconstructed Images")
     plt.figure(figsize=(n, n))
     plt.imshow(canvas_recon, origin="upper", cmap="gray")
-    plt.savefig('figs/reconstructed.png', dpi=300); plt.clf()
+    plt.savefig('figs/test_reconstructed.png', dpi=300); plt.clf()
+    # plt.show()
+
+    # TRAIN SET
+    # Encode and decode images from test set and visualize their reconstruction.
+    n = 4
+    canvas_orig = np.empty((rows * n, columns * n))
+    canvas_recon = np.empty((rows * n, columns * n))
+    # __MAX__
+    batch_idx = 0
+    for i in range(n):
+        # MNIST test set
+        batch_x = batches_train[ batch_idx ][:n,:]
+        batch_idx += 1
+        batch_idx = batch_idx%len(batches_test)
+        # Encode and decode the digit image
+        g = sess.run(decoder_op, feed_dict={X: batch_x})
+
+        # Display original images
+        for j in range(n):
+            # Draw the original digits
+            canvas_orig[i * rows:(i + 1) * rows, j * columns:(j + 1) * columns] = \
+                batch_x[j].reshape([rows, columns])
+        # Display reconstructed images
+        for j in range(n):
+            # Draw the reconstructed digits
+            canvas_recon[i * rows:(i + 1) * rows, j * columns:(j + 1) * columns] = \
+                g[j].reshape([rows, columns])
+
+    print("Original Images")
+    plt.figure(figsize=(n, n))
+    plt.imshow(canvas_orig, origin="upper", cmap="gray")
+    plt.savefig('figs/train_original.png', dpi=300); plt.clf()
+    # plt.show()
+
+    print("Reconstructed Images")
+    plt.figure(figsize=(n, n))
+    plt.imshow(canvas_recon, origin="upper", cmap="gray")
+    plt.savefig('figs/train_reconstructed.png', dpi=300); plt.clf()
     # plt.show()
