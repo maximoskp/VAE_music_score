@@ -30,8 +30,10 @@ with open('saved_data' + os.sep + 'data_tower.pickle', 'rb') as handle:
     rows = d['rows']
     columns = d['columns']
 
+np.random.shuffle( serialised_segments )
+
 # Training Parameters
-learning_rate = 0.01
+learning_rate = 0.001
 num_steps = 1000000 # what should this be?
 batch_size = 256
 
@@ -59,9 +61,9 @@ display_step = 1000
 examples_to_show = 10
 
 # Network Parameters
-num_hidden_1 = 2048 # 1st layer num features
-num_hidden_2 = 1024 # 2nd layer num features
-num_hidden_3 = 512 # the bottleneck
+num_hidden_1 = 256 # 1st layer num features
+num_hidden_2 = 64 # 2nd layer num features
+# num_hidden_3 = 32 # the bottleneck
 num_input = rows*columns # serialised score
 
 # tf Graph input (only pictures)
@@ -70,18 +72,18 @@ X = tf.placeholder("float", [None, num_input])
 weights = {
     'encoder_h1': tf.Variable(tf.random_normal([num_input, num_hidden_1])),
     'encoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_hidden_2])),
-    'encoder_h3': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_3])),
-    'decoder_h1': tf.Variable(tf.random_normal([num_hidden_3, num_hidden_2])),
-    'decoder_h2': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_1])),
-    'decoder_h3': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
+    # 'encoder_h3': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_3])),
+    'decoder_h1': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_1])),
+    'decoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
+    # 'decoder_h3': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
 }
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
     'encoder_b2': tf.Variable(tf.random_normal([num_hidden_2])),
-    'encoder_b3': tf.Variable(tf.random_normal([num_hidden_3])),
-    'decoder_b1': tf.Variable(tf.random_normal([num_hidden_2])),
-    'decoder_b2': tf.Variable(tf.random_normal([num_hidden_1])),
-    'decoder_b3': tf.Variable(tf.random_normal([num_input])),
+    # 'encoder_b3': tf.Variable(tf.random_normal([num_hidden_3])),
+    'decoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
+    'decoder_b2': tf.Variable(tf.random_normal([num_input])),
+    # 'decoder_b3': tf.Variable(tf.random_normal([num_input])),
 }
 
 # Building the encoder
@@ -93,9 +95,9 @@ def encoder(x):
     layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']),
                                    biases['encoder_b2']))
     # Encoder Hidden layer with sigmoid activation #3
-    layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['encoder_h3']),
-                                   biases['encoder_b3']))
-    return layer_3
+    # layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['encoder_h3']),
+                                   # biases['encoder_b3']))
+    return layer_2
 
 
 # Building the decoder
@@ -107,9 +109,9 @@ def decoder(x):
     layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']),
                                    biases['decoder_b2']))
     # Decoder Hidden layer with sigmoid activation #3
-    layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['decoder_h3']),
-                                   biases['decoder_b3']))
-    return layer_3
+    # layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['decoder_h3']),
+                                   # biases['decoder_b3']))
+    return layer_2
 
 # Construct model
 encoder_op = encoder(X)
