@@ -33,8 +33,8 @@ with open('saved_data' + os.sep + 'data_tower.pickle', 'rb') as handle:
 np.random.shuffle( serialised_segments )
 
 # Training Parameters
-learning_rate = 0.001
-num_steps = 1000000 # what should this be?
+learning_rate = 0.001 # it was 0.01
+num_steps = 1000000 # possibly increase a lot
 batch_size = 256
 
 # __MAX__
@@ -61,8 +61,8 @@ display_step = 1000
 examples_to_show = 10
 
 # Network Parameters
-num_hidden_1 = 256 # 1st layer num features
-num_hidden_2 = 64 # 2nd layer num features
+num_hidden_1 = 256 # 1st layer num features - trains fine for even fewer
+num_hidden_2 = 64 # 2nd layer num features - trains fine for even fewer
 # num_hidden_3 = 32 # the bottleneck
 num_input = rows*columns # serialised score
 
