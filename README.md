@@ -7,3 +7,7 @@ How to run.
 4) See results/examples in figs.
 
 See comments in music_autoencoder.py.
+
+TODOs:
+1) Run/check if it runs: mnist_VAE.py
+2) Make music_VAE by adjusting mnist_VAE.py to process music data.
