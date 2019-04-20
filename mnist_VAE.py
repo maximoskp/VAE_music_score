@@ -1,140 +1,141 @@
-""" Auto Encoder Example.
-Build a 2 layers auto-encoder with TensorFlow to compress images to a
-lower latent space and then reconstruct them.
+""" Variational Auto-Encoder Example.
+Using a variational auto-encoder to generate digits images from noise.
+MNIST handwritten digits are used as training examples.
 References:
-    Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner. "Gradient-based
+    - Auto-Encoding Variational Bayes The International Conference on Learning
+    Representations (ICLR), Banff, 2014. D.P. Kingma, M. Welling
+    - Understanding the difficulty of training deep feedforward neural networks.
+    X Glorot, Y Bengio. Aistats 9, 249-256
+    - Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner. "Gradient-based
     learning applied to document recognition." Proceedings of the IEEE,
     86(11):2278-2324, November 1998.
 Links:
-    [MNIST Dataset] http://yann.lecun.com/exdb/mnist/
+    - [VAE Paper] https://arxiv.org/abs/1312.6114
+    - [Xavier Glorot Init](www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.../AISTATS2010_Glorot.pdf).
+    - [MNIST Dataset] http://yann.lecun.com/exdb/mnist/
 Author: Aymeric Damien
 Project: https://github.com/aymericdamien/TensorFlow-Examples/
 """
 from __future__ import division, print_function, absolute_import
 
-import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import norm
+import tensorflow as tf
 
 # Import MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
-# Training Parameters
-learning_rate = 0.01
+# Parameters
+learning_rate = 0.001
 num_steps = 30000
-batch_size = 256
-
-display_step = 1000
-examples_to_show = 10
+batch_size = 64
 
 # Network Parameters
-num_hidden_1 = 256 # 1st layer num features
-num_hidden_2 = 128 # 2nd layer num features (the latent dim)
-num_input = 784 # MNIST data input (img shape: 28*28)
+image_dim = 784 # MNIST images are 28x28 pixels
+hidden_dim = 512
+latent_dim = 2
 
-# tf Graph input (only pictures)
-X = tf.placeholder("float", [None, num_input])
+# A custom initialization (see Xavier Glorot init)
+def glorot_init(shape):
+    return tf.random_normal(shape=shape, stddev=1. / tf.sqrt(shape[0] / 2.))
 
+# Variables
 weights = {
-    'encoder_h1': tf.Variable(tf.random_normal([num_input, num_hidden_1])),
-    'encoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_hidden_2])),
-    'decoder_h1': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_1])),
-    'decoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
+    'encoder_h1': tf.Variable(glorot_init([image_dim, hidden_dim])),
+    'z_mean': tf.Variable(glorot_init([hidden_dim, latent_dim])),
+    'z_std': tf.Variable(glorot_init([hidden_dim, latent_dim])),
+    'decoder_h1': tf.Variable(glorot_init([latent_dim, hidden_dim])),
+    'decoder_out': tf.Variable(glorot_init([hidden_dim, image_dim]))
 }
 biases = {
-    'encoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
-    'encoder_b2': tf.Variable(tf.random_normal([num_hidden_2])),
-    'decoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
-    'decoder_b2': tf.Variable(tf.random_normal([num_input])),
+    'encoder_b1': tf.Variable(glorot_init([hidden_dim])),
+    'z_mean': tf.Variable(glorot_init([latent_dim])),
+    'z_std': tf.Variable(glorot_init([latent_dim])),
+    'decoder_b1': tf.Variable(glorot_init([hidden_dim])),
+    'decoder_out': tf.Variable(glorot_init([image_dim]))
 }
 
 # Building the encoder
-def encoder(x):
-    # Encoder Hidden layer with sigmoid activation #1
-    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']),
-                                   biases['encoder_b1']))
-    # Encoder Hidden layer with sigmoid activation #2
-    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']),
-                                   biases['encoder_b2']))
-    return layer_2
+input_image = tf.placeholder(tf.float32, shape=[None, image_dim])
+encoder = tf.matmul(input_image, weights['encoder_h1']) + biases['encoder_b1']
+encoder = tf.nn.tanh(encoder)
+z_mean = tf.matmul(encoder, weights['z_mean']) + biases['z_mean']
+z_std = tf.matmul(encoder, weights['z_std']) + biases['z_std']
+
+# Sampler: Normal (gaussian) random distribution
+eps = tf.random_normal(tf.shape(z_std), dtype=tf.float32, mean=0., stddev=1.0,
+                       name='epsilon')
+z = z_mean + tf.exp(z_std / 2) * eps
+
+# Building the decoder (with scope to re-use these layers later)
+decoder = tf.matmul(z, weights['decoder_h1']) + biases['decoder_b1']
+decoder = tf.nn.tanh(decoder)
+decoder = tf.matmul(decoder, weights['decoder_out']) + biases['decoder_out']
+decoder = tf.nn.sigmoid(decoder)
 
 
-# Building the decoder
-def decoder(x):
-    # Decoder Hidden layer with sigmoid activation #1
-    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']),
-                                   biases['decoder_b1']))
-    # Decoder Hidden layer with sigmoid activation #2
-    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']),
-                                   biases['decoder_b2']))
-    return layer_2
+# Define VAE Loss
+def vae_loss(x_reconstructed, x_true):
+    # Reconstruction loss
+    encode_decode_loss = x_true * tf.log(1e-10 + x_reconstructed) \
+                         + (1 - x_true) * tf.log(1e-10 + 1 - x_reconstructed)
+    encode_decode_loss = -tf.reduce_sum(encode_decode_loss, 1)
+    # KL Divergence loss
+    kl_div_loss = 1 + z_std - tf.square(z_mean) - tf.exp(z_std)
+    kl_div_loss = -0.5 * tf.reduce_sum(kl_div_loss, 1)
+    return tf.reduce_mean(encode_decode_loss + kl_div_loss)
 
-# Construct model
-encoder_op = encoder(X)
-decoder_op = decoder(encoder_op)
-
-# Prediction
-y_pred = decoder_op
-# Targets (Labels) are the input data.
-y_true = X
-
-# Define loss and optimizer, minimize the squared error
-loss = tf.reduce_mean(tf.pow(y_true - y_pred, 2))
-optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss)
+loss_op = vae_loss(decoder, input_image)
+optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate)
+train_op = optimizer.minimize(loss_op)
 
 # Initialize the variables (i.e. assign their default value)
 init = tf.global_variables_initializer()
 
-# Start Training
-# Start a new TF session
+# Start training
 with tf.Session() as sess:
 
     # Run the initializer
     sess.run(init)
 
-    # Training
     for i in range(1, num_steps+1):
         # Prepare Data
         # Get the next batch of MNIST data (only images are needed, not labels)
         batch_x, _ = mnist.train.next_batch(batch_size)
 
-        # Run optimization op (backprop) and cost op (to get loss value)
-        _, l = sess.run([optimizer, loss], feed_dict={X: batch_x})
-        # Display logs per step
-        if i % display_step == 0 or i == 1:
-            print('Step %i: Minibatch Loss: %f' % (i, l))
+        # Train
+        feed_dict = {input_image: batch_x}
+        _, l = sess.run([train_op, loss_op], feed_dict=feed_dict)
+        if i % 1000 == 0 or i == 1:
+            print('Step %i, Loss: %f' % (i, l))
 
     # Testing
-    # Encode and decode images from test set and visualize their reconstruction.
-    n = 4
-    canvas_orig = np.empty((28 * n, 28 * n))
-    canvas_recon = np.empty((28 * n, 28 * n))
-    for i in range(n):
-        # MNIST test set
-        batch_x, _ = mnist.test.next_batch(n)
-        # Encode and decode the digit image
-        g = sess.run(decoder_op, feed_dict={X: batch_x})
+    # Generator takes noise as input
+    noise_input = tf.placeholder(tf.float32, shape=[None, latent_dim])
+    # Rebuild the decoder to create image from noise
+    decoder = tf.matmul(noise_input, weights['decoder_h1']) + biases['decoder_b1']
+    decoder = tf.nn.tanh(decoder)
+    decoder = tf.matmul(decoder, weights['decoder_out']) + biases['decoder_out']
+    decoder = tf.nn.sigmoid(decoder)
 
-        # Display original images
-        for j in range(n):
-            # Draw the original digits
-            canvas_orig[i * 28:(i + 1) * 28, j * 28:(j + 1) * 28] = \
-                batch_x[j].reshape([28, 28])
-        # Display reconstructed images
-        for j in range(n):
-            # Draw the reconstructed digits
-            canvas_recon[i * 28:(i + 1) * 28, j * 28:(j + 1) * 28] = \
-                g[j].reshape([28, 28])
+    # Building a manifold of generated digits
+    n = 20
+    x_axis = np.linspace(-3, 3, n)
+    y_axis = np.linspace(-3, 3, n)
 
-    print("Original Images")
-    plt.figure(figsize=(n, n))
-    plt.imshow(canvas_orig, origin="upper", cmap="gray")
-    plt.savefig('figs/mnist_test_original.png', dpi=300); plt.clf()
-    # plt.show()
+    canvas = np.empty((28 * n, 28 * n))
+    for i, yi in enumerate(x_axis):
+        for j, xi in enumerate(y_axis):
+            z_mu = np.array([[xi, yi]] * batch_size)
+            x_mean = sess.run(decoder, feed_dict={noise_input: z_mu})
+            canvas[(n - i - 1) * 28:(n - i) * 28, j * 28:(j + 1) * 28] = \
+            x_mean[0].reshape(28, 28)
 
-    print("Reconstructed Images")
-    plt.figure(figsize=(n, n))
-    plt.imshow(canvas_recon, origin="upper", cmap="gray")
-    plt.savefig('figs/mnist_test_reconstructed.png', dpi=300); plt.clf()
+    print("Printing Images")
+    plt.figure(figsize=(8, 10))
+    Xi, Yi = np.meshgrid(x_axis, y_axis)
+    plt.imshow(canvas, origin="upper", cmap="gray")
+    plt.savefig('figs/VAE_mnist.png', dpi=300); plt.clf()
     # plt.show()
