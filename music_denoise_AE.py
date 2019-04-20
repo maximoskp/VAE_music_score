@@ -149,7 +149,7 @@ with tf.Session() as sess:
 
         # Run optimization op (backprop) and cost op (to get loss value)
         # make noise
-        noiz = tf.random_normal(shape=batch_x.shape, stddev=0.5)
+        noiz = sess.run( tf.random_normal(shape=batch_x.shape, stddev=0.5) )
         _, l = sess.run([optimizer, loss], feed_dict={X_noise: batch_x+noiz, X: batch_x})
         # Display logs per step
         if i % display_step == 0 or i == 1:
