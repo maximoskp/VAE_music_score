@@ -166,13 +166,13 @@ with tf.Session() as sess:
     x_axis = np.linspace(-3, 3, n)
     y_axis = np.linspace(-3, 3, n)
 
-    canvas = np.empty((28 * n, 28 * n))
+    canvas = np.empty((rows * n, columns * n))
     for i, yi in enumerate(x_axis):
         for j, xi in enumerate(y_axis):
             z_mu = np.array([[xi, yi]] * batch_size)
             x_mean = sess.run(decoder, feed_dict={noise_input: z_mu})
-            canvas[(n - i - 1) * 28:(n - i) * 28, j * 28:(j + 1) * 28] = \
-            x_mean[0].reshape(28, 28)
+            canvas[(n - i - 1) * rows:(n - i) * rows, j * columns:(j + 1) * columns] = \
+            x_mean[0].reshape(rows, column)
 
     print("Printing Images")
     plt.figure(figsize=(8, 10))
