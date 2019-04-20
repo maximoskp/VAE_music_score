@@ -172,7 +172,7 @@ with tf.Session() as sess:
             z_mu = np.array([[xi, yi]] * batch_size)
             x_mean = sess.run(decoder, feed_dict={noise_input: z_mu})
             canvas[(n - i - 1) * rows:(n - i) * rows, j * columns:(j + 1) * columns] = \
-            x_mean[0].reshape(rows, column)
+            x_mean[0].reshape(rows, columns)
 
     print("Printing Images")
     plt.figure(figsize=(8, 10))
