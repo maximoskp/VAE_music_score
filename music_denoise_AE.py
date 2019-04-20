@@ -67,6 +67,7 @@ num_hidden_2 = 4096 # 2nd layer num features
 num_input = rows*columns # serialised score
 
 # tf Graph input (only pictures)
+X_noise = tf.placeholder("float", [None, num_input])
 X = tf.placeholder("float", [None, num_input])
 
 weights = {
