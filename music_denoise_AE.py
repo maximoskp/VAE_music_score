@@ -61,7 +61,7 @@ display_step = 1000
 examples_to_show = 10
 
 # Network Parameters
-num_hidden_1 = 8192 # 1st layer num features
+num_hidden_1 = 4096 # 1st layer num features
 # num_hidden_2 = 4096 # 2nd layer num features
 # num_hidden_3 = 32 # the bottleneck
 num_input = rows*columns # serialised score
@@ -151,7 +151,8 @@ with tf.Session() as sess:
 
         # Run optimization op (backprop) and cost op (to get loss value)
         # make noise
-        noiz = sess.run( tf.random_normal(shape=batch_x.shape, stddev=0.5) )
+        noiz = np.random.uniform(0, 1, size=batch_x.shape)
+        # noiz = sess.run( tf.random_normal(shape=batch_x.shape, stddev=0.5) )
         _, l = sess.run([optimizer, loss], feed_dict={X_noise: batch_x+noiz, X: batch_x})
         # Display logs per step
         if i % display_step == 0 or i == 1:
