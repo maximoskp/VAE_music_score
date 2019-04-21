@@ -210,7 +210,7 @@ with tf.Session() as sess:
         batch_idx += 1
         batch_idx = batch_idx%len(batches_test)
         # Encode and decode the digit image
-        g = sess.run(decoder_op, feed_dict={X: batch_x})
+        g = sess.run(decoder_op, feed_dict={X: batch_x, X_noise: batch_x})
 
         # Display original images
         for j in range(n):
