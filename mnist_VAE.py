@@ -108,11 +108,11 @@ with tf.Session() as sess:
 
         # Train
         feed_dict = {input_image: batch_x}
-        _, l = sess.run([train_op, loss_op], feed_dict=feed_dict)
+        _, l, z_m, z_s = sess.run([train_op, loss_op, z_mean, z_std], feed_dict=feed_dict)
         if i % display_step == 0 or i == 1:
             print('Step %i, Loss: %f' % (i, l))
-            print('z_mean.shape: ', z_mean.shape)
-            print('z_std.shape: ', z_std.shape)
+            print('z_m.shape: ', z_m.shape)
+            print('z_s.shape: ', z_s.shape)
 
     # Testing
     # Generator takes noise as input
