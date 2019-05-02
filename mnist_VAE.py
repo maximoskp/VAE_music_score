@@ -108,11 +108,13 @@ with tf.Session() as sess:
 
         # Train
         feed_dict = {input_image: batch_x}
+        # z_mean, z_std: to be removed, where added for debuging CVAE
         _, l, z_m, z_s = sess.run([train_op, loss_op, z_mean, z_std], feed_dict=feed_dict)
         if i % display_step == 0 or i == 1:
             print('Step %i, Loss: %f' % (i, l))
-            print('np.mean(z_m): ', np.mean(z_m))
-            print('np.mean(z_s): ', np.mean(z_s))
+            # z_mean, z_std: to be removed, where added for debuging CVAE
+            print('np.mean(z_m): ', np.mean(z_m)) # remove
+            print('np.mean(z_s): ', np.mean(z_s)) # remove
 
     # Testing
     # Generator takes noise as input
