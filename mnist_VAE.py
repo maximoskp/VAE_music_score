@@ -111,8 +111,8 @@ with tf.Session() as sess:
         _, l, z_m, z_s = sess.run([train_op, loss_op, z_mean, z_std], feed_dict=feed_dict)
         if i % display_step == 0 or i == 1:
             print('Step %i, Loss: %f' % (i, l))
-            print('z_m.shape: ', z_m.shape)
-            print('z_s.shape: ', z_s.shape)
+            print('z_m[0,0:5]: ', z_m.[0,0:5])
+            print('z_s.[0,0:5]: ', z_s.[0,0:5])
 
     # Testing
     # Generator takes noise as input
