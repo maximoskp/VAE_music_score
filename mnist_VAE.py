@@ -29,7 +29,8 @@ mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
 # Parameters
 learning_rate = 0.001
-num_steps = 30000
+num_steps = 1000
+display_step = 100
 batch_size = 64
 
 # Network Parameters
@@ -108,8 +109,10 @@ with tf.Session() as sess:
         # Train
         feed_dict = {input_image: batch_x}
         _, l = sess.run([train_op, loss_op], feed_dict=feed_dict)
-        if i % 1000 == 0 or i == 1:
+        if i % display_step == 0 or i == 1:
             print('Step %i, Loss: %f' % (i, l))
+            print('z_mean.shape: ', z_mean.shape)
+            print('z_std.shape: ', z_std.shape)
 
     # Testing
     # Generator takes noise as input
